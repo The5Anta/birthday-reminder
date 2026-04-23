@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
+from tkcalendar import DateEntry
 from datetime import date
 from models.person import Person
 from models.birthday import Birthday
@@ -14,7 +15,7 @@ class App:
     def __init__(self, root):
         self.root = root
         self.root.title("Birthday Reminder")
-        self.root.geometry("600x550")
+        self.root.geometry("650x600")
 
         self.manager = BirthdayManager()
         self.file_handler = FileHandler(FILE_PATH)
@@ -40,16 +41,21 @@ class App:
         self.email_var = tk.StringVar()
         tk.Entry(form, textvariable=self.email_var, width=30).grid(row=1, column=1, padx=5)
 
-        tk.Label(form, text="Data (YYYY-MM-DD):").grid(row=2, column=0, sticky="w")
-        self.date_var = tk.StringVar()
-        tk.Entry(form, textvariable=self.date_var, width=30).grid(row=2, column=1, padx=5)
+        tk.Label(form, text="Gimimo data:").grid(row=2, column=0, sticky="w")
+        self.date_entry = DateEntry(form, width=28, date_pattern="yyyy-mm-dd",
+                                   maxdate=date.today())
+        self.date_entry.grid(row=2, column=1, padx=5, pady=3)
 
         tk.Label(form, text="Pastaba:").grid(row=3, column=0, sticky="w")
         self.note_var = tk.StringVar()
         tk.Entry(form, textvariable=self.note_var, width=30).grid(row=3, column=1, padx=5)
 
+        tk.Label(form, text="Priminti likus dienų:").grid(row=4, column=0, sticky="w")
+        self.reminder_var = tk.StringVar(value="7")
+        tk.Entry(form, textvariable=self.reminder_var, width=10).grid(row=4, column=1, padx=5, sticky="w")
+
         btn_frame = tk.Frame(form)
-        btn_frame.grid(row=4, column=1, pady=5, sticky="e")
+        btn_frame.grid(row=5, column=1, pady=5, sticky="e")
 
         self.save_btn = tk.Button(btn_frame, text="Išsaugoti", command=self._save)
         self.save_btn.pack(side="left", padx=3)
@@ -57,45 +63,89 @@ class App:
         self.cancel_btn = tk.Button(btn_frame, text="Atšaukti", command=self._cancel, state="disabled")
         self.cancel_btn.pack(side="left", padx=3)
 
-        # Sąrašas
+        search_frame = tk.Frame(self.root)
+        search_frame.pack(fill="x", padx=10)
+        tk.Label(search_frame, text="🔍 Paieška:").pack(side="left")
+        self.search_var = tk.StringVar()
+        self.search_var.trace("w", lambda *args: self._refresh_list())
+        tk.Entry(search_frame, textvariable=self.search_var, width=30).pack(side="left", padx=5)
+
         list_frame = tk.LabelFrame(self.root, text="Gimtadieniai", padx=10, pady=10)
         list_frame.pack(fill="both", expand=True, padx=10, pady=5)
 
         self.listbox = tk.Listbox(list_frame, height=10)
         self.listbox.pack(fill="both", expand=True)
 
+        legend = tk.Frame(list_frame)
+        legend.pack(anchor="w", pady=2)
+        tk.Label(legend, text="■", fg="green").pack(side="left")
+        tk.Label(legend, text="Šiandien  ").pack(side="left")
+        tk.Label(legend, text="■", fg="orange").pack(side="left")
+        tk.Label(legend, text="Per 7 dienas  ").pack(side="left")
+        tk.Label(legend, text="■", fg="black").pack(side="left")
+        tk.Label(legend, text="Kiti").pack(side="left")
+
         btn_frame2 = tk.Frame(list_frame)
         btn_frame2.pack(pady=5)
-
         tk.Button(btn_frame2, text="Redaguoti", command=self._edit).pack(side="left", padx=5)
         tk.Button(btn_frame2, text="Ištrinti", command=self._delete).pack(side="left", padx=5)
 
         self._refresh_list()
 
+    def _get_sorted_filtered(self):
+        query = self.search_var.get().strip().lower()
+        birthdays = self.manager.get_all()
+        if query:
+            birthdays = [b for b in birthdays if query in b.person.name.lower()]
+        return sorted(birthdays, key=lambda b: b.days_until())
+
+    def _refresh_list(self):
+        self.listbox.delete(0, tk.END)
+        for b in self._get_sorted_filtered():
+            days = b.days_until()
+            age = b.age()
+            label = f"{b.person.name} | {b.birth_date} | {age} m. | liko {days} d."
+            self.listbox.insert(tk.END, label)
+            if days == 0:
+                self.listbox.itemconfig(tk.END, fg="green")
+            elif days <= 7:
+                self.listbox.itemconfig(tk.END, fg="orange")
+
+    def _check_reminders(self):
+        try:
+            days_threshold = int(self.reminder_var.get())
+        except ValueError:
+            days_threshold = 7
+        upcoming = [b for b in self.manager.get_all() if 0 < b.days_until() <= days_threshold]
+        if upcoming:
+            names = "\n".join(f"{b.person.name} – liko {b.days_until()} d." for b in upcoming)
+            messagebox.showinfo("🔔 Artėjantys gimtadieniai", names)
+
     def _save(self):
         name = self.name_var.get().strip()
         email = self.email_var.get().strip()
-        date_str = self.date_var.get().strip()
+        date_str = self.date_entry.get()
         note = self.note_var.get().strip()
 
-        if not name or not email or not date_str:
+        if not name or not email:
             messagebox.showwarning("Klaida", "Užpildyk visus privalomus laukus.")
             return
 
         try:
             birth_date = date.fromisoformat(date_str)
         except ValueError:
-            messagebox.showerror("Klaida", "Data turi būti YYYY-MM-DD formatu.")
+            messagebox.showerror("Klaida", "Neteisingas datos formatas.")
             return
 
         person = Person(name, email)
         birthday = Birthday(person, birth_date, note)
 
         if self._editing_index is not None:
-            birthdays = self.manager.get_all()
-            old_name = birthdays[self._editing_index].person.name
+            all_b = self.manager.get_all()
+            sorted_b = self._get_sorted_filtered()
+            old_name = sorted_b[self._editing_index].person.name
             self.manager.remove_birthday(old_name)
-            self.manager.get_all().insert(self._editing_index, birthday)
+            self.manager.add_birthday(birthday)
             self._editing_index = None
             self.cancel_btn.config(state="disabled")
             self.save_btn.config(text="Išsaugoti")
@@ -105,6 +155,7 @@ class App:
         self.file_handler.save(self.manager.get_all())
         self._clear_form()
         self._refresh_list()
+        self._check_reminders()
 
     def _edit(self):
         selected = self.listbox.curselection()
@@ -114,11 +165,11 @@ class App:
 
         index = selected[0]
         self._editing_index = index
-        b = self.manager.get_all()[index]
+        b = self._get_sorted_filtered()[index]
 
         self.name_var.set(b.person.name)
         self.email_var.set(b.person.email)
-        self.date_var.set(b.birth_date.isoformat())
+        self.date_entry.set_date(b.birth_date)
         self.note_var.set(b.note)
 
         self.save_btn.config(text="Atnaujinti")
@@ -130,8 +181,8 @@ class App:
             messagebox.showwarning("Klaida", "Pasirink gimtadienį iš sąrašo.")
             return
         index = selected[0]
-        birthday = self.manager.get_all()[index]
-        self.manager.remove_birthday(birthday.person.name)
+        b = self._get_sorted_filtered()[index]
+        self.manager.remove_birthday(b.person.name)
         self.file_handler.save(self.manager.get_all())
         self._editing_index = None
         self._clear_form()
@@ -146,13 +197,8 @@ class App:
     def _clear_form(self):
         self.name_var.set("")
         self.email_var.set("")
-        self.date_var.set("")
+        self.date_entry.set_date(date.today())
         self.note_var.set("")
-
-    def _refresh_list(self):
-        self.listbox.delete(0, tk.END)
-        for b in self.manager.get_all():
-            self.listbox.insert(tk.END, str(b))
 
     def _check_todays(self):
         todays = self.notifier.check(self.manager.get_all())
