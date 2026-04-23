@@ -104,7 +104,7 @@ class App:
         for b in self._get_sorted_filtered():
             days = b.days_until()
             age = b.age()
-            label = f"{b.person.name} | {b.birth_date} | {age} m. | liko {days} d."
+            label = f"{b.person.name} | {b.birth_date} | {age} m. | liko {days} d. | {b.note}" if b.note else f"{b.person.name} | {b.birth_date} | {age} m. | liko {days} d."
             self.listbox.insert(tk.END, label)
             if days == 0:
                 self.listbox.itemconfig(tk.END, fg="green")
