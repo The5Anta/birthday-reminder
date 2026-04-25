@@ -11,7 +11,12 @@ class BirthdayManager:
         return cls._instance
 
     def add_birthday(self, birthday: Birthday):
+        for b in self._birthdays:
+            if (b.person.name.lower() == birthday.person.name.lower() and
+                    b.birth_date == birthday.birth_date):
+                return False
         self._birthdays.append(birthday)
+        return True
 
     def remove_birthday(self, name: str):
         self._birthdays = [b for b in self._birthdays if b.person.name.lower() != name.lower()]
