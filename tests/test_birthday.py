@@ -19,6 +19,16 @@ class TestPerson(unittest.TestCase):
         person = Person("Jonas", "jonas@gmail.com")
         self.assertEqual(str(person), "Jonas (jonas@gmail.com)")
 
+    def test_user_str(self):
+        from models.person import User
+        user = User("Jonas", "jonas@gmail.com")
+        self.assertEqual(str(user), "User: Jonas")
+
+    def test_user_inherits_person(self):
+        from models.person import User
+        user = User("Jonas", "jonas@gmail.com")
+        self.assertIsInstance(user, Person)
+
 
 class TestBirthday(unittest.TestCase):
 
@@ -39,14 +49,33 @@ class TestBirthday(unittest.TestCase):
         self.assertIn("Jonas", str(self.birthday))
 
     def test_is_today_false(self):
-        self.birthday = Birthday(self.person, date(1990, 1, 1))
-        self.assertFalse(self.birthday.is_today())
+        birthday = Birthday(self.person, date(1990, 1, 1))
+        self.assertFalse(birthday.is_today())
+
+    def test_age(self):
+        today = date.today()
+        birth = date(today.year - 25, today.month, today.day)
+        birthday = Birthday(self.person, birth)
+        self.assertEqual(birthday.age(), 25)
+
+    def test_age_before_birthday(self):
+        today = date.today()
+        birth = date(today.year - 25, today.month, today.day + 1) if today.day < 28 else date(today.year - 25, today.month, 1)
+        birthday = Birthday(self.person, birth)
+        self.assertEqual(birthday.age(), 24)
+
+    def test_days_until_today(self):
+        today = date.today()
+        birthday = Birthday(self.person, date(1990, today.month, today.day))
+        self.assertEqual(birthday.days_until(), 0)
+
+    def test_days_until_positive(self):
+        self.assertGreaterEqual(self.birthday.days_until(), 0)
 
 
 class TestBirthdayManager(unittest.TestCase):
 
     def setUp(self):
-        # Reset singleton
         BirthdayManager._instance = None
         self.manager = BirthdayManager()
         self.person = Person("Ana", "ana@gmail.com")
@@ -77,6 +106,17 @@ class TestBirthdayManager(unittest.TestCase):
 
     def test_get_all_empty(self):
         self.assertEqual(self.manager.get_all(), [])
+
+    def test_no_duplicates(self):
+        self.manager.add_birthday(self.birthday)
+        self.manager.add_birthday(self.birthday)
+        self.assertEqual(len(self.manager.get_all()), 1)
+
+    def test_get_todays(self):
+        today = date.today()
+        birthday_today = Birthday(self.person, date(1990, today.month, today.day))
+        self.manager.add_birthday(birthday_today)
+        self.assertEqual(len(self.manager.get_todays()), 1)
 
 
 if __name__ == "__main__":

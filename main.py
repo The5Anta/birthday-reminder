@@ -7,6 +7,7 @@ from models.birthday import Birthday
 from manager.birthday_manager import BirthdayManager
 from utils.file_handler import FileHandler
 from utils.notification import NotificationChecker
+from tkinter import filedialog
 
 FILE_PATH = "data/birthdays.csv"
 
@@ -104,6 +105,10 @@ class App:
         btn_frame2.pack(pady=5)
         tk.Button(btn_frame2, text="Redaguoti", command=self._edit).pack(side="left", padx=5)
         tk.Button(btn_frame2, text="Ištrinti", command=self._delete).pack(side="left", padx=5)
+        btn_frame3 = tk.Frame(list_frame)
+        btn_frame3.pack(pady=2)
+        tk.Button(btn_frame3, text="📤 Eksportuoti CSV", command=self._export).pack(side="left", padx=5)
+        tk.Button(btn_frame3, text="📥 Importuoti CSV", command=self._import).pack(side="left", padx=5)
 
         self._refresh_list()
 
@@ -255,6 +260,29 @@ class App:
         self.save_btn.config(text="Išsaugoti")
         self.cancel_btn.config(state="disabled")
 
+    def _export(self):
+        filepath = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[("CSV failai", "*.csv")],
+            title="Eksportuoti gimtadienius"
+        )
+        if filepath:
+            FileHandler(filepath).save(self.manager.get_all())
+            messagebox.showinfo("Sėkmė", "Gimtadieniai eksportuoti!")
+
+    def _import(self):
+        filepath = filedialog.askopenfilename(
+            filetypes=[("CSV failai", "*.csv")],
+            title="Importuoti gimtadienius"
+        )
+        if filepath:
+            birthdays = FileHandler(filepath).load()
+            for b in birthdays:
+                self.manager.add_birthday(b)
+            self.file_handler.save(self.manager.get_all())
+            self._refresh_list()
+            self._refresh_calendar()
+            messagebox.showinfo("Sėkmė", f"Importuota {len(birthdays)} įrašų!")
     def _clear_form(self):
         self.name_var.set("")
         self.email_var.set("")
