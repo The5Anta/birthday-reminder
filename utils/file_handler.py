@@ -1,4 +1,5 @@
 import csv
+import os
 from datetime import date
 from models.person import Person
 from models.birthday import Birthday
@@ -9,6 +10,7 @@ class FileHandler:
         self.__filepath = filepath
 
     def save(self, birthdays: list):
+        os.makedirs(os.path.dirname(self.__filepath), exist_ok=True)
         with open(self.__filepath, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(["name", "email", "birth_date", "note"])
