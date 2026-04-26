@@ -28,6 +28,7 @@ class App:
 
         self._build_ui()
         self._check_todays()
+        self._check_reminders()
 
     def _build_ui(self):
         notebook = ttk.Notebook(self.root)
@@ -65,10 +66,6 @@ class App:
         tk.Label(form, text="Pastaba:").grid(row=3, column=0, sticky="w")
         self.note_var = tk.StringVar()
         tk.Entry(form, textvariable=self.note_var, width=30).grid(row=3, column=1, padx=5)
-
-        tk.Label(form, text="Priminti likus dienų:").grid(row=4, column=0, sticky="w")
-        self.reminder_var = tk.StringVar(value="7")
-        tk.Entry(form, textvariable=self.reminder_var, width=10).grid(row=4, column=1, padx=5, sticky="w")
 
         btn_frame = tk.Frame(form)
         btn_frame.grid(row=5, column=1, pady=5, sticky="e")
@@ -171,10 +168,7 @@ class App:
                 self.listbox.itemconfig(tk.END, fg="orange")
 
     def _check_reminders(self):
-        try:
-            days_threshold = int(self.reminder_var.get())
-        except ValueError:
-            days_threshold = 7
+        days_threshold = 7
         upcoming = [b for b in self.manager.get_all() if 0 < b.days_until() <= days_threshold]
         if upcoming:
             names = "\n".join(f"{b.person.name} – liko {b.days_until()} d." for b in upcoming)
