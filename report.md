@@ -3,7 +3,7 @@
 ## 1. Įvadas
 
 ### Kas yra ši programa?
-Birthday Reminder – tai Python programavimo kalba sukurta gimtadienių priminimo programa su grafine vartotojo sąsaja (tkinter). Programa leidžia vartotojui pridėti, redaguoti, ištrinti ir ieškoti gimtadienių. Paleidus programą automatiškai pranešama apie šiandieninius gimtadienius ir artėjančius per nustatytą dienų skaičių.
+Birthday Reminder – tai Python programavimo kalba sukurta gimtadienių priminimo programa su grafine vartotojo sąsaja (tkinter). Programa leidžia vartotojui pridėti, redaguoti, ištrinti ir ieškoti gimtadienių. Paleidus programą automatiškai pranešama apie šiandieninius gimtadienius ir artėjančius per 7 dienas.
 
 ### Kaip paleisti programą?
 1. Įsitikink kad įdiegtas Python 3.10 ar naujesnė versija
@@ -29,7 +29,7 @@ Birthday Reminder – tai Python programavimo kalba sukurta gimtadienių primini
 - **Eksportuoti** – spausk „Eksportuoti CSV" ir pasirink kur išsaugoti failą
 - **Importuoti** – spausk „Importuoti CSV" ir pasirink failą (turi būti UTF-8 formato)
 - **Gimtadienio pranešimas** – paleidus programą automatiškai rodomas pranešimas jei šiandien yra kažkieno gimtadienis
-
+- **Artėjantys gimtadieniai** – paleidus programą rodomas pranešimas apie gimtadienius artėjančius per 7 dienas
 ---
 
 ## 2. Analizė
